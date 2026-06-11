@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.venv/
+venv/
+.env
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Postgres local data
+pgdata/
+
+# Logs
+*.log
+
+# Docker
+*.sqlite3
+test.db
+**/acme.json

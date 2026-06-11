@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# Git
+.git
+.gitignore
+
+# Local Postgres data
+pgdata/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
