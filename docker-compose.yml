@@ -1,9 +1,41 @@
-version: "3.8"
-
 services:
-  # -------------------
-  # FastAPI API
-  # -------------------
+
+  # ========================================
+  # Traefik
+  # ========================================
+  traefik:
+    image: traefik:v3.7.5
+    container_name: traefik
+    command:
+      - --api.dashboard=true
+      # Docker provider
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # Entrypoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # HTTP -> HTTPS
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      # Let's Encrypt
+      - --certificatesresolvers.letsencrypt.acme.email=contact@soowcode.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/letsencrypt:/letsencrypt
+    networks:
+      - traefik-public
+      - internal
+    restart: unless-stopped
+
+  # ========================================
+  # FastAPI
+  # ========================================
   api:
     build: .
     container_name: api
@@ -12,12 +44,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`my-todo-sg.soowcode.com`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
+      - traefik.http.services.api.loadbalancer.server.port=8000
+      - traefik.http.services.api.loadbalancer.server.scheme=http
+    networks:
+      - internal
+      - traefik-public
+    restart: unless-stopped
+    expose:
+      - "8000"
 
-  # -------------------
+  # ========================================
   # PostgreSQL
-  # -------------------
+  # ========================================
   postgres:
     image: postgres:15
     container_name: postgres_db
@@ -32,50 +75,74 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
 
-  # -------------------
-  # Loki (logs)
-  # -------------------
+  # ========================================
+  # Loki
+  # ========================================
   loki:
-    image: grafana/loki:3.1.1
+    image: grafana/loki:3.7.2
     container_name: loki
-    command: ["-config.file=/etc/loki/loki-config.yml"]
-    ports:
-      - "3100:3100"
+    command:
+      - -config.file=/etc/loki/loki-config.yml
     volumes:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki
+    networks:
+      - internal
+    restart: unless-stopped
 
-  # -------------------
-  # Grafana
-  # -------------------
-  grafana:
-    image: grafana/grafana:11.2.0
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-    depends_on:
-      - loki
-
-  # -------------------
-  # Promtail (envoie les logs Docker vers Loki)
-  # -------------------
+  # ========================================
+  # Promtail
+  # ========================================
   promtail:
-    image: grafana/promtail:3.1.1
+    image: grafana/promtail:3.6.11
     container_name: promtail
-    command: ["-config.file=/etc/promtail/promtail-config.yml"]
+    command:
+      - -config.file=/etc/promtail/promtail-config.yml
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - loki
+    networks:
+      - internal
+    restart: unless-stopped
+
+  # ========================================
+  # Grafana
+  # ========================================
+  grafana:
+    image: grafana/grafana:11.6
+    container_name: grafana
+    env_file:
+      - .env
+    depends_on:
+      - loki
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`monito-sg.soowcode.com`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - internal
+      - traefik-public
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   loki-data:
   grafana-data:
+
+networks:
+  traefik-public:
+    name: traefik-public
+
+  internal:
+    name: internal

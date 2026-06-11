@@ -21,3 +21,4 @@ pgdata/
 # Docker
 *.sqlite3
 test.db
+**/acme.json
