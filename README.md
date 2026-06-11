@@ -1,125 +1,130 @@
-# FastAPI Todo App
+Voici une version “lazy dev mais pro” : simple, lisible, mais suffisamment clean pour GitHub + entretien DevSecOps.
 
-Simple FastAPI application using PostgreSQL, Docker, and Pytest.
+⸻
 
-This project also includes observability tools (Grafana, Loki, Promtail).
+:::writing{variant=“document” id=“91873”}
 
----
+🚀 FastAPI Todo App (DevSecOps Stack)
 
-## Stack
+Simple Todo application built with FastAPI, PostgreSQL and Docker.
+Includes observability (Grafana, Loki, Promtail), CI/CD, and Traefik reverse proxy.
 
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- Pytest
-- Docker / Docker Compose
-- Grafana
-- Loki
-- Promtail
+⸻
 
+⚙️ Stack
 
----
+* FastAPI
+* PostgreSQL
+* SQLAlchemy
+* Docker / Docker Compose
+* Traefik (reverse proxy)
+* Grafana + Loki + Promtail
+* Pytest
+* Prometheus metrics
 
-## Environment variables
+⸻
 
-The project requires a `.env` file based on `.env.template`.
+🏃 Run locally
 
-Create it with:
+docker compose up -d --build
 
-```bash
-cp .env.template .env
-````
+⸻
 
-Main variables:
+🌍 Access
 
-```env
-DATABASE_URL=postgresql://user:password@db:5432/app
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-POSTGRES_DB=app
-```
+Local (dev mode)
 
----
+Add to /etc/hosts:
 
-## Run the project
+127.0.0.1 my-todo-sg.localhost
+127.0.0.1 monito-sg.localhost
 
-Start all services:
+Then:
 
-```bash
-docker compose up --build
-```
+* API → http://my-todo-sg.localhost
+* Monitoring → http://monito-sg.localhost
 
-Application:
+⸻
 
-[http://localhost:8000](http://localhost:8000)
+Production (AWS - next step)
 
----
+* API → https://my-todo-sg.soowcode.com
+* Grafana → https://monito-sg.soowcode.com
 
-## Run tests
+⸻
 
-Tests should be executed inside a virtual environment:
+🔎 API endpoints
 
-```bash
+Health
+
+* GET /health → service status
+* GET /ready → DB readiness check
+
+App
+
+* GET / → HTML todo list
+* POST /todos → create todo
+* POST /todos/{id}/done → mark as done
+* POST /todos/{id}/delete → delete todo
+
+Metrics
+
+* GET /metrics → Prometheus metrics
+
+⸻
+
+📊 Observability
+
+* Grafana → dashboards
+* Loki → logs aggregation
+* Promtail → log shipping from Docker
+
+⸻
+
+🔐 Security
+
+* No direct DB exposure
+* Services isolated via Docker networks
+* Traefik reverse proxy handles routing
+* .env and acme.json excluded from Git
+* Image scanning via Trivy (CI pipeline)
+
+⸻
+
+🚀 CI/CD
+
+Pipeline includes:
+
+* Tests (Pytest)
+* Build Docker image
+* Security scan (Trivy)
+* Push to DockerHub
+* Deployment step (AWS EC2 – next step)
+
+⸻
+
+🧪 Tests
+
 PYTHONPATH=. DATABASE_URL=sqlite:///./test.db pytest -q
-```
 
----
+⸻
 
-## Docker
+🐳 Docker
 
-Build image:
+Build:
 
-```bash
 docker build -t fastapi-app .
-```
 
-Run container:
+Run:
 
-```bash
 docker run -p 8000:8000 fastapi-app
-```
 
----
+⸻
 
-## Observability
+🧭 Roadmap
 
-This project includes:
+* AWS EC2 deployment (next step)
+* Terraform infrastructure
+* HTTPS hardening (HSTS, headers, WAF)
 
-* Grafana (dashboards)
-* Loki (logs aggregation)
-* Promtail (log shipping)
-
-Start them via Docker Compose:
-
-```bash
-docker compose up -d
-```
-
----
-
-## API
-
-Once running:
-
-* [http://localhost:8000](http://localhost:8000) → API root
-* [http://localhost:8000/docs](http://localhost:8000/docs) → Swagger UI
-
----
-
-## Next steps
-
-* GitHub Actions CI/CD pipeline
-* Traefik reverse proxy with HTTPS (Cloudflare)
-* Push Docker images to Docker Hub
-* Security scanning with Trivy
-* Automated deployment on AWS EC2 (no manual SSH steps)
-
----
-
-## Notes
-
-* Ensure PostgreSQL is running before starting the app
-* Use `.env.template` as reference for configuration
-* All services are containerized via Docker Compose
-
-```
+⸻
